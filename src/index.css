@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  /* light, off-white. danfo yellow stays as the one accent. */
+  --color-paper: #f6f5f1;
+  --color-surface: #ffffff;
+  --color-ink: #1a1710;
+  --color-ink-soft: #5b5346;
+  --color-ink-faint: #978d79;
+  --color-danfo: #f7b500;
+  --color-danfo-deep: #c98800;
+  --color-line: #e6e2d7;
+
+  --font-display: "Hanken Grotesk", system-ui, sans-serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+
+  --radius: 0.85rem;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+  ::selection {
+    background-color: var(--color-danfo);
+    color: var(--color-ink);
+  }
+}
+
+@keyframes danfo-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@utility rise {
+  opacity: 0;
+  animation: danfo-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
