@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { useParams } from "react-router-dom"
+import { Link, useParams } from "react-router-dom"
 import { Bus } from "lucide-react"
 import { useVehicleByCode, useVehicleReviews, REVIEWS_PAGE_SIZE } from "../lib/vehicles"
+import { useBoardTrip, useActiveTrip, useVehicleRides, RIDES_PAGE_SIZE } from "../lib/trips"
 import { useCurrentUser, signIn } from "../lib/auth"
 import { ApiError } from "../lib/api"
 import { Shell } from "../components/Shell"
@@ -10,6 +11,8 @@ import { StatusPill } from "../components/StatusPill"
 import { Button } from "../components/ui/Button"
 import { Pagination } from "../components/Pagination"
 import { GridDecor } from "../components/GridDecor"
+import { RidePanel } from "../components/RidePanel"
+import { RideCard } from "../components/RideCard"
 import { cn } from "../lib/cn"
 
 function formatDateTime(iso: string) {
@@ -21,12 +24,36 @@ function formatDateTime(iso: string) {
   return `${day} · ${time}`
 }
 
+function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "-mb-px border-b-2 pb-2.5 text-sm transition-colors",
+        active ? "border-danfo text-ink" : "border-transparent text-ink-faint hover:text-ink",
+      )}
+    >
+      {label}
+    </button>
+  )
+}
+
+
 export function Vehicle() {
   const { code } = useParams<{ code: string }>()
   const vehicle = useVehicleByCode(code ?? "")
-  const [page, setPage] = useState(0)
-  const reviews = useVehicleReviews(code ?? "", page)
   const { data: user } = useCurrentUser()
+  const [tab, setTab] = useState<"reviews" | "rides">("reviews")
+  const [page, setPage] = useState(0)
+  const [ridesPage, setRidesPage] = useState(0)
+  const reviews = useVehicleReviews(code ?? "", page)
+  const myRides = useVehicleRides(code ?? "", ridesPage, !!user)
+  const boardTrip = useBoardTrip()
+  const activeTripQuery = useActiveTrip()
+
+  const active = activeTripQuery.data?.active ? activeTripQuery.data : null
+  const ridingThis = !!active && active.code === code
+  const ridingOther = !!active && active.code !== code
 
   if (vehicle.isLoading) {
     return (
@@ -72,7 +99,7 @@ export function Vehicle() {
       signIn()
       return
     }
-    // NOTE: POST /app/trips boarding (and the swap to "Share ride") is wired next
+    boardTrip.mutate(data!.publicCode)
   }
 
   return (
@@ -82,8 +109,7 @@ export function Vehicle() {
         <GridDecor className="-left-24 bottom-10" />
 
         <div className="relative z-10">
-          {/* identity left, action right */}
-          <div className="grid gap-6 pt-9 sm:grid-cols-[1fr_auto] sm:items-center">
+          <div className={cn("grid gap-6 pt-9", !ridingThis && "sm:grid-cols-[1fr_auto] sm:items-center")}>
             <div className="rise" style={{ animationDelay: "40ms" }}>
               {data.plateState && (
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-faint">
@@ -107,55 +133,127 @@ export function Vehicle() {
               )}
             </div>
 
-            <div className="rise sm:justify-self-end sm:text-right" style={{ animationDelay: "120ms" }}>
-              <Button size="md" onClick={board}>
-                <Bus size={17} strokeWidth={2.2} />
-                Board this danfo
-              </Button>
-              <p className="mt-2 text-xs text-ink-faint">
-                {user ? "Starts a tracked trip." : "Sign in to board."}
-              </p>
-            </div>
+            {!ridingThis && (
+              <div className="rise sm:justify-self-end sm:text-right" style={{ animationDelay: "120ms" }}>
+                {ridingOther ? (
+                  <div className="text-sm">
+                    <p className="text-ink-soft">
+                      You&rsquo;re riding <span className="font-semibold text-ink">{active!.plate}</span>.
+                    </p>
+                    <Link
+                      to={`/v/${active!.code}`}
+                      className="mt-1 inline-block font-medium text-danfo-deep hover:underline"
+                    >
+                      Go to that ride →
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <Button size="md" onClick={board} disabled={boardTrip.isPending}>
+                      <Bus size={17} strokeWidth={2.2} />
+                      {boardTrip.isPending ? "Boarding…" : "Board this danfo"}
+                    </Button>
+                    <p className="mt-2 text-xs text-ink-faint">
+                      {user ? "Starts a tracked trip." : "Sign in to board."}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* recent reviews */}
-          <section className="rise mt-12" style={{ animationDelay: "200ms" }}>
-            <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-faint">Recent reviews</h2>
+          {ridingThis && active && (
+            <RidePanel trip={{ id: active.id, startedAt: active.startedAt }} className="rise mt-6" />
+          )}
 
-            {reviews.data && reviews.data.reviews.length > 0 ? (
-              <ul className="mt-3 space-y-2.5">
-                {reviews.data.reviews.map((review, index) => (
-                  <li key={index} className="rounded-[var(--radius)] border border-line bg-surface p-3.5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 items-baseline gap-1.5">
-                        <span
-                          className={cn(
-                            "text-[13px] font-medium text-ink",
-                            review.anonymous && "select-none blur-[3px]",
-                          )}
-                        >
-                          {review.reviewer}
-                        </span>
-                        <span className="text-ink-faint/50">·</span>
-                        <span className="truncate text-xs font-normal text-ink-faint">
-                          {formatDateTime(review.createdAt)}
-                        </span>
-                      </div>
-                      <StarRating value={review.rating} size={14} />
-                    </div>
-                    {review.body && (
-                      <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{review.body}</p>
-                    )}
-                  </li>
-                ))}
-              </ul>
+          <section className="rise mt-12" style={{ animationDelay: "200ms" }}>
+            {user ? (
+              <div className="flex items-center gap-6 border-b border-line">
+                <TabButton
+                  label={count > 0 ? `Reviews (${count})` : "Reviews"}
+                  active={tab === "reviews"}
+                  onClick={() => setTab("reviews")}
+                />
+                <TabButton label="Your rides" active={tab === "rides"} onClick={() => setTab("rides")} />
+              </div>
             ) : (
-              <p className="mt-3 rounded-[var(--radius)] border border-dashed border-line px-4 py-9 text-center text-sm text-ink-faint">
-                No reviews yet. Be the first to rate a ride on this danfo.
-              </p>
+              <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-faint">Recent reviews</h2>
             )}
 
-            <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+            {(!user || tab === "reviews") && (
+              <div className="mt-4">
+                {reviews.data && reviews.data.reviews.length > 0 ? (
+                  <ul className="space-y-2.5">
+                    {reviews.data.reviews.map((review, index) => (
+                      <li key={index} className="rounded-[var(--radius)] border border-line bg-surface p-3.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-baseline gap-1.5">
+                            <span
+                              className={cn(
+                                "text-[13px] font-medium text-ink",
+                                review.anonymous && "select-none blur-[3px]",
+                              )}
+                            >
+                              {review.reviewer}
+                            </span>
+                            <span className="text-ink-faint/50">·</span>
+                            <span className="truncate text-xs font-normal text-ink-faint">
+                              {formatDateTime(review.createdAt)}
+                            </span>
+                          </div>
+                          <StarRating value={review.rating} size={14} />
+                        </div>
+                        {review.body && (
+                          <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{review.body}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="rounded-[var(--radius)] border border-dashed border-line px-4 py-9 text-center text-sm text-ink-faint">
+                    No reviews yet. Be the first to rate a ride on this danfo.
+                  </p>
+                )}
+                <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+              </div>
+            )}
+
+            {user && tab === "rides" && (
+              <div className="mt-4">
+                {myRides.data && myRides.data.length > 0 ? (
+                  <ul className="space-y-2.5">
+                    {myRides.data.map((ride) => (
+                      <RideCard key={ride.id} ride={ride} />
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="rounded-[var(--radius)] border border-dashed border-line px-4 py-9 text-center text-sm text-ink-faint">
+                    You haven&rsquo;t ridden this danfo yet.
+                  </p>
+                )}
+                {(ridesPage > 0 || (myRides.data?.length ?? 0) === RIDES_PAGE_SIZE) && (
+                  <div className="mt-4 flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={ridesPage === 0}
+                      onClick={() => setRidesPage((p) => p - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <span className="text-xs text-ink-faint">Page {ridesPage + 1}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={(myRides.data?.length ?? 0) < RIDES_PAGE_SIZE}
+                      onClick={() => setRidesPage((p) => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </section>
         </div>
       </div>

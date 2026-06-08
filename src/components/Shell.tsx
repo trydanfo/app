@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react"
+import { Link } from "react-router-dom"
 import { useCurrentUser, signOut } from "../lib/auth"
 import { Wordmark } from "./Wordmark"
 import { Avatar } from "./Avatar"
@@ -12,7 +13,9 @@ export function Shell({ children }: { children: ReactNode }) {
     <div className="min-h-[100dvh]">
       <header className="sticky top-0 z-20 border-b border-line/70 bg-paper/55 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-5">
-          <Wordmark className="text-lg" />
+          <Link to="/" aria-label="Home">
+            <Wordmark className="text-lg" />
+          </Link>
           {user && <ProfileMenu name={name} email={user.email} picture={user.profilePicture} />}
         </div>
       </header>

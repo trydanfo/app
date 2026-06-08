@@ -1,3 +1,5 @@
+import { useState } from "react"
+
 function initials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   if (parts.length === 0) return "?"
@@ -6,13 +8,18 @@ function initials(name: string) {
 }
 
 export function Avatar({ src, name, size = 36 }: { src?: string; name: string; size?: number }) {
+  const [failed, setFailed] = useState(false)
   const dimension = { width: size, height: size }
-  if (src) {
+
+  if (src && !failed) {
     return (
       <img
         src={src}
         alt={name}
         style={dimension}
+        // Google avatar URLs 403 without this; fall back to initials if it still fails
+        referrerPolicy="no-referrer"
+        onError={() => setFailed(true)}
         className="shrink-0 rounded-full border border-line object-cover"
       />
     )

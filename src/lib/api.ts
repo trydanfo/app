@@ -2,9 +2,11 @@ const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080"
 
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  body: Record<string, unknown> | null
+  constructor(status: number, message: string, body: Record<string, unknown> | null = null) {
     super(message)
     this.status = status
+    this.body = body
   }
 }
 
@@ -17,13 +19,14 @@ export async function api<TResponse>(path: string, options: RequestInit = {}): P
 
   if (!response.ok) {
     let message = response.statusText
+    let body: Record<string, unknown> | null = null
     try {
-      const body = await response.json()
-      message = body.error ?? message
+      body = await response.json()
+      message = (body?.error as string) ?? message
     } catch {
       // NOTE: body was not json, fall back to the status text
     }
-    throw new ApiError(response.status, message)
+    throw new ApiError(response.status, message, body)
   }
 
   if (response.status === 204) {
