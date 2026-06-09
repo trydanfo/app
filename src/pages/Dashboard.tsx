@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { QrCode, Bus } from "lucide-react"
 import { useCurrentUser } from "../lib/auth"
 import { useActiveTrip, useTrips, RIDES_PAGE_SIZE } from "../lib/trips"
@@ -15,6 +15,7 @@ function greeting(hour: number) {
 }
 
 export function Dashboard() {
+  const navigate = useNavigate()
   const { data: user } = useCurrentUser()
   const activeTripQuery = useActiveTrip()
   const active = activeTripQuery.data?.active ? activeTripQuery.data : null
@@ -48,7 +49,11 @@ export function Dashboard() {
               <span className="text-danfo">.</span>
             </h1>
           </div>
-          <Button className="rise mt-1 shrink-0" style={{ animationDelay: "120ms" }}>
+          <Button
+            className="rise mt-1 shrink-0"
+            style={{ animationDelay: "120ms" }}
+            onClick={() => navigate("/scan")}
+          >
             <QrCode size={18} strokeWidth={2.2} />
             Scan for tag
           </Button>

@@ -4,6 +4,7 @@ import { sendPing } from "./trips"
 const MIN_INTERVAL_MS = 5000 // never ping more often than this
 const HEARTBEAT_MS = 45000 // …but ping at least this often, even parked (keeps the trip alive)
 const MIN_DISTANCE_M = 25 // while moving, ping once you've covered this much ground
+const ACCURACY_LIMIT_M = 100 // ignore fixes fuzzier than this (urban canyons, cold start) — they spike the route
 
 export type LiveFix = { lat: number; lng: number; at: number }
 
@@ -58,7 +59,10 @@ export function useRideTracking(tripId: number | undefined, active: boolean) {
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
+        // a fix at all means permission is granted, so clear any earlier error
         setGeoError(null)
+        // …but don't trust a fuzzy fix — it would put a spike in the route
+        if (position.coords.accuracy != null && position.coords.accuracy > ACCURACY_LIMIT_M) return
         const lat = position.coords.latitude
         const lng = position.coords.longitude
         const speed = position.coords.speed ?? undefined
