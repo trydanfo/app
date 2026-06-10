@@ -13,6 +13,7 @@ import { Pagination } from "../components/Pagination"
 import { GridDecor } from "../components/GridDecor"
 import { RidePanel } from "../components/RidePanel"
 import { RideCard } from "../components/RideCard"
+import { RideFeedbackBanner } from "../components/RideFeedbackBanner"
 import { cn } from "../lib/cn"
 
 function formatDateTime(iso: string) {
@@ -54,6 +55,9 @@ export function Vehicle() {
   const active = activeTripQuery.data?.active ? activeTripQuery.data : null
   const ridingThis = !!active && active.code === code
   const ridingOther = !!active && active.code !== code
+
+  // the rider's most recent finished ride on this danfo that's still inside the review window
+  const lastEligibleRide = myRides.data?.find((ride) => ride.reviewable)
 
   if (vehicle.isLoading) {
     return (
@@ -164,6 +168,17 @@ export function Vehicle() {
 
           {ridingThis && active && (
             <RidePanel trip={{ id: active.id, startedAt: active.startedAt }} className="rise mt-6" />
+          )}
+
+          {!ridingThis && lastEligibleRide && (
+            <div className="rise mt-6">
+              <RideFeedbackBanner
+                tripId={lastEligibleRide.id}
+                plate={data.plateNumber}
+                reviewed={lastEligibleRide.reviewed}
+                reviewable={lastEligibleRide.reviewable}
+              />
+            </div>
           )}
 
           <section className="rise mt-12" style={{ animationDelay: "200ms" }}>

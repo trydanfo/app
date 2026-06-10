@@ -50,7 +50,12 @@ export function useEndTrip() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => api<Trip>(`/api/v1/app/trips/${id}/end`, { method: "POST" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["active-trip"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["active-trip"] })
+      // the just-ended ride should now surface as reviewable on the dashboard + vehicle page
+      queryClient.invalidateQueries({ queryKey: ["trips"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicle-rides"] })
+    },
   })
 }
 
@@ -69,6 +74,8 @@ export type TripListItem = {
   distanceMeters?: number
   plate: string
   code: string
+  reviewed: boolean
+  reviewable: boolean
 }
 
 export const RIDES_PAGE_SIZE = 6
@@ -105,6 +112,8 @@ export type TripDetail = {
   vehicleId: number
   plate: string
   code: string
+  reviewed: boolean
+  reviewable: boolean
 }
 
 export function useTrip(id: string) {
@@ -112,6 +121,39 @@ export function useTrip(id: string) {
     queryKey: ["trip", id],
     queryFn: () => api<TripDetail>(`/api/v1/app/trips/${id}`),
     enabled: !!id,
+  })
+}
+
+// feedback: a ride can be reviewed (one per trip) or reported (safety flags, many per trip) for a
+// window after it ends — the backend enforces the same window, these just drive the banner + modals.
+export const reportKinds = [
+  { value: "reckless_driving", label: "Reckless driving" },
+  { value: "overcharge", label: "Overcharging" },
+  { value: "harassment", label: "Harassment" },
+  { value: "robbery_safety", label: "Robbery / safety" },
+  { value: "unroadworthy", label: "Unroadworthy vehicle" },
+  { value: "other", label: "Something else" },
+] as const
+
+export function useSubmitReview(tripId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (body: { rating: number; body?: string; anonymous?: boolean }) =>
+      api(`/api/v1/app/trips/${tripId}/review`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["trip", String(tripId)] })
+      queryClient.invalidateQueries({ queryKey: ["trips"] })
+      queryClient.invalidateQueries({ queryKey: ["vehicle-rides"] })
+      // surface the new review (and updated average) in the vehicle's Reviews list
+      queryClient.invalidateQueries({ queryKey: ["vehicle-reviews"] })
+    },
+  })
+}
+
+export function useSubmitReport(tripId: number) {
+  return useMutation({
+    mutationFn: (body: { kind: string; body?: string }) =>
+      api(`/api/v1/app/trips/${tripId}/report`, { method: "POST", body: JSON.stringify(body) }),
   })
 }
 

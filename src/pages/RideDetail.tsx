@@ -3,6 +3,7 @@ import { useTrip } from "../lib/trips"
 import { Shell } from "../components/Shell"
 import { GridDecor } from "../components/GridDecor"
 import { RouteMap, parsePolyline } from "../components/RouteMap"
+import { RideFeedbackBanner } from "../components/RideFeedbackBanner"
 import { cn } from "../lib/cn"
 
 function formatDateTime(iso: string) {
@@ -101,6 +102,17 @@ export function RideDetail() {
           >
             view this danfo →
           </Link>
+
+          {data.reviewable && (
+            <div className="mt-5">
+              <RideFeedbackBanner
+                tripId={data.id}
+                plate={data.plate}
+                reviewed={data.reviewed}
+                reviewable={data.reviewable}
+              />
+            </div>
+          )}
 
           <div className="mt-5 grid grid-cols-2 gap-3">
             <Stat label="Distance" value={formatDistance(data.distanceMeters)} />
