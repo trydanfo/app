@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { createPortal } from "react-dom"
 import { Angry, Check, Frown, Meh, Smile, Laugh, Star, TriangleAlert, X } from "lucide-react"
 import { reportKinds, useSubmitReport, useSubmitReview } from "../lib/trips"
 import { ApiError } from "../lib/api"
@@ -115,7 +116,7 @@ function FeedbackModal({
 
   const canSubmit = mode === "review" ? rating >= 1 : !!kind
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 p-4 backdrop-blur-sm sm:items-center"
       onClick={onClose}
@@ -256,6 +257,7 @@ function FeedbackModal({
           </>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
