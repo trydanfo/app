@@ -45,6 +45,21 @@ export function useVehicleReviews(code: string, page: number) {
   })
 }
 
+// flags = reports ops has chosen to publish to this vehicle's profile (curated note only)
+export type VehicleFlag = {
+  kind: string
+  note: string
+  createdAt: string
+}
+
+export function useVehicleFlags(code: string) {
+  return useQuery({
+    queryKey: ["vehicle-flags", code],
+    queryFn: () => api<VehicleFlag[]>(`/api/v1/vehicles/by-code/${code}/flags`),
+    enabled: !!code,
+  })
+}
+
 export type VehicleLocation = {
   source: "last_ride" | "none"
   lat?: number

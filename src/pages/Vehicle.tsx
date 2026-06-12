@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Link, useParams } from "react-router-dom"
-import { Bus } from "lucide-react"
-import { useVehicleByCode, useVehicleReviews, REVIEWS_PAGE_SIZE } from "../lib/vehicles"
+import { Bus, TriangleAlert } from "lucide-react"
+import { useVehicleByCode, useVehicleReviews, useVehicleFlags, REVIEWS_PAGE_SIZE } from "../lib/vehicles"
 import { useBoardTrip, useActiveTrip, useVehicleRides, RIDES_PAGE_SIZE } from "../lib/trips"
 import { useCurrentUser, signIn } from "../lib/auth"
 import { ApiError } from "../lib/api"
@@ -23,6 +23,15 @@ function formatDateTime(iso: string) {
     .toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit", hour12: true })
     .toLowerCase()
   return `${day} · ${time}`
+}
+
+const flagLabels: Record<string, string> = {
+  reckless_driving: "Reckless driving",
+  overcharge: "Overcharging",
+  harassment: "Harassment",
+  robbery_safety: "Robbery / safety",
+  unroadworthy: "Unroadworthy",
+  other: "Flagged",
 }
 
 function TabButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
@@ -48,6 +57,7 @@ export function Vehicle() {
   const [page, setPage] = useState(0)
   const [ridesPage, setRidesPage] = useState(0)
   const reviews = useVehicleReviews(code ?? "", page)
+  const flags = useVehicleFlags(code ?? "")
   const myRides = useVehicleRides(code ?? "", ridesPage, !!user)
   const boardTrip = useBoardTrip()
   const activeTripQuery = useActiveTrip()
@@ -179,6 +189,33 @@ export function Vehicle() {
                 reviewable={lastEligibleRide.reviewable}
               />
             </div>
+          )}
+
+          {flags.data && flags.data.length > 0 && (
+            <section className="rise mt-8" style={{ animationDelay: "160ms" }}>
+              <div className="flex items-center gap-2">
+                <TriangleAlert size={15} strokeWidth={2.2} className="text-danfo-deep" />
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-faint">
+                  Safety notes
+                </h2>
+              </div>
+              <ul className="mt-3 space-y-2.5">
+                {flags.data.map((flag, index) => (
+                  <li
+                    key={index}
+                    className="rounded-[var(--radius)] border border-danfo/30 bg-danfo/[0.06] p-3.5"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[13px] font-bold text-ink">
+                        {flagLabels[flag.kind] ?? flagLabels.other}
+                      </span>
+                      <span className="shrink-0 text-xs text-ink-faint">{formatDateTime(flag.createdAt)}</span>
+                    </div>
+                    <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{flag.note}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
 
           <section className="rise mt-12" style={{ animationDelay: "200ms" }}>
