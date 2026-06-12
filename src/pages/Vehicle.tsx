@@ -53,7 +53,7 @@ export function Vehicle() {
   const { code } = useParams<{ code: string }>()
   const vehicle = useVehicleByCode(code ?? "")
   const { data: user } = useCurrentUser()
-  const [tab, setTab] = useState<"reviews" | "rides">("reviews")
+  const [tab, setTab] = useState<"reviews" | "reports" | "rides">("reviews")
   const [page, setPage] = useState(0)
   const [ridesPage, setRidesPage] = useState(0)
   const reviews = useVehicleReviews(code ?? "", page)
@@ -68,6 +68,7 @@ export function Vehicle() {
 
   // the rider's most recent finished ride on this danfo that's still inside the review window
   const lastEligibleRide = myRides.data?.find((ride) => ride.reviewable)
+  const flagCount = flags.data?.length ?? 0
 
   if (vehicle.isLoading) {
     return (
@@ -191,48 +192,26 @@ export function Vehicle() {
             </div>
           )}
 
-          {flags.data && flags.data.length > 0 && (
-            <section className="rise mt-8" style={{ animationDelay: "160ms" }}>
-              <div className="flex items-center gap-2">
-                <TriangleAlert size={15} strokeWidth={2.2} className="text-danfo-deep" />
-                <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-faint">
-                  Safety notes
-                </h2>
-              </div>
-              <ul className="mt-3 space-y-2.5">
-                {flags.data.map((flag, index) => (
-                  <li
-                    key={index}
-                    className="rounded-[var(--radius)] border border-danfo/30 bg-danfo/[0.06] p-3.5"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-[13px] font-bold text-ink">
-                        {flagLabels[flag.kind] ?? flagLabels.other}
-                      </span>
-                      <span className="shrink-0 text-xs text-ink-faint">{formatDateTime(flag.createdAt)}</span>
-                    </div>
-                    <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{flag.note}</p>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
           <section className="rise mt-12" style={{ animationDelay: "200ms" }}>
-            {user ? (
-              <div className="flex items-center gap-6 border-b border-line">
+            <div className="flex items-center gap-6 border-b border-line">
+              <TabButton
+                label={count > 0 ? `Reviews (${count})` : "Reviews"}
+                active={tab === "reviews"}
+                onClick={() => setTab("reviews")}
+              />
+              {flagCount > 0 && (
                 <TabButton
-                  label={count > 0 ? `Reviews (${count})` : "Reviews"}
-                  active={tab === "reviews"}
-                  onClick={() => setTab("reviews")}
+                  label={`Reports (${flagCount})`}
+                  active={tab === "reports"}
+                  onClick={() => setTab("reports")}
                 />
+              )}
+              {user && (
                 <TabButton label="Your rides" active={tab === "rides"} onClick={() => setTab("rides")} />
-              </div>
-            ) : (
-              <h2 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink-faint">Recent reviews</h2>
-            )}
+              )}
+            </div>
 
-            {(!user || tab === "reviews") && (
+            {tab === "reviews" && (
               <div className="mt-4">
                 {reviews.data && reviews.data.reviews.length > 0 ? (
                   <ul className="space-y-2.5">
@@ -267,6 +246,31 @@ export function Vehicle() {
                   </p>
                 )}
                 <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+              </div>
+            )}
+
+            {tab === "reports" && (
+              <div className="mt-4">
+                {flags.data && flags.data.length > 0 ? (
+                  <ul className="space-y-2.5">
+                    {flags.data.map((flag, index) => (
+                      <li key={index} className="rounded-[var(--radius)] border border-line bg-surface p-3.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-red-700">
+                            <TriangleAlert size={13} strokeWidth={2.4} />
+                            {flagLabels[flag.kind] ?? flagLabels.other}
+                          </span>
+                          <span className="shrink-0 text-xs text-ink-faint">{formatDateTime(flag.createdAt)}</span>
+                        </div>
+                        <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{flag.note}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="rounded-[var(--radius)] border border-dashed border-line px-4 py-9 text-center text-sm text-ink-faint">
+                    No reports on this danfo.
+                  </p>
+                )}
               </div>
             )}
 
