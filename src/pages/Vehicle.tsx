@@ -81,14 +81,28 @@ export function Vehicle() {
   }
 
   if (vehicle.error instanceof ApiError && vehicle.error.status === 404) {
+    // a code matching a pre-minted-but-unregistered tag is a real sticker still waiting on its danfo
+    const unregisteredTag = vehicle.error.body?.reason === "unregistered_tag"
     return (
       <Shell>
         <div className="mx-auto flex min-h-[60dvh] max-w-md flex-col items-center justify-center px-6 text-center">
-          <p className="font-display text-2xl font-bold tracking-tight">Not a danfo we know.</p>
-          <p className="mt-2 text-sm text-ink-soft">
-            The code <span className="font-semibold text-ink">{code}</span> isn&rsquo;t registered yet.
-            Double-check the sticker, or scan again.
-          </p>
+          {unregisteredTag ? (
+            <>
+              <p className="font-display text-2xl font-bold tracking-tight">Tag not live yet.</p>
+              <p className="mt-2 text-sm text-ink-soft">
+                This sticker (<span className="font-semibold text-ink">{code}</span>) is registered to our
+                system but hasn&rsquo;t been linked to a danfo yet. Check back soon.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="font-display text-2xl font-bold tracking-tight">Not a danfo we know.</p>
+              <p className="mt-2 text-sm text-ink-soft">
+                The code <span className="font-semibold text-ink">{code}</span> isn&rsquo;t registered yet.
+                Double-check the sticker, or scan again.
+              </p>
+            </>
+          )}
         </div>
       </Shell>
     )
