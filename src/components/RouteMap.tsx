@@ -1,5 +1,5 @@
-import { MapContainer, TileLayer, Polyline } from "react-leaflet"
-import "leaflet/dist/leaflet.css"
+import { TileLayer, Polyline } from "react-leaflet"
+import { MapFrame } from "./MapFrame"
 
 export function parsePolyline(routePolyline: string | null | undefined): [number, number][] {
   if (!routePolyline) return []
@@ -22,17 +22,12 @@ export function RouteMap({ points, height = "260px" }: { points: [number, number
     )
   }
   return (
-    <MapContainer
-      bounds={points}
-      scrollWheelZoom={false}
-      style={{ height, width: "100%" }}
-      className="overflow-hidden rounded-[var(--radius)] border border-line"
-    >
+    <MapFrame bounds={points} height={height}>
       <TileLayer
         attribution="&copy; OpenStreetMap contributors"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <Polyline positions={points} pathOptions={{ color: "#1a1710", weight: 4 }} />
-    </MapContainer>
+    </MapFrame>
   )
 }
