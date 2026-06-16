@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Share2, Check, Square } from "lucide-react"
 import { useEndTrip, useShareTrip, liveShareUrl } from "../lib/trips"
-import { useRideTracking } from "../lib/tracking"
+import { useTracking } from "./TrackingProvider"
 import { Button } from "./ui/Button"
 import { PointMap } from "./PointMap"
 import { cn } from "../lib/cn"
@@ -24,7 +24,8 @@ export function RidePanel({
 }) {
   const endTrip = useEndTrip()
   const share = useShareTrip()
-  const { geoError, fix } = useRideTracking(trip.id, true)
+  // tracking now runs app-wide in TrackingProvider; the panel just reflects the live fix
+  const { geoError, fix } = useTracking()
   const [now, setNow] = useState(Date.now())
   const [copied, setCopied] = useState(false)
 
