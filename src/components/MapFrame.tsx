@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import { MapContainer, useMap } from "react-leaflet"
 import { Maximize2, X } from "lucide-react"
 import type { LatLngBoundsExpression, LatLngExpression } from "leaflet"
@@ -48,7 +49,7 @@ export function MapFrame({
     }
   }, [full])
 
-  return (
+  const frame = (
     <div className={full ? "fixed inset-0 z-[1200] bg-paper" : "relative"} style={full ? undefined : { height }}>
       <MapContainer
         center={center}
@@ -71,4 +72,8 @@ export function MapFrame({
       </button>
     </div>
   )
+
+  // Fullscreen portals to <body> so it escapes the page's stacking context (a `relative z-10`
+  // wrapper) — otherwise the sticky header would paint over the map and its controls.
+  return full ? createPortal(frame, document.body) : frame
 }
