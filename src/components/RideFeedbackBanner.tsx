@@ -23,7 +23,26 @@ export function RideFeedbackBanner({
 }) {
   const [mode, setMode] = useState<Mode | null>(null)
 
-  if (!reviewable) return null
+  // a rider who's done with this ride can dismiss the prompt for good — remembered per trip
+  const dismissKey = `danfo.ride-feedback-dismissed.${tripId}`
+  const [dismissed, setDismissed] = useState(() => {
+    try {
+      return localStorage.getItem(dismissKey) === "1"
+    } catch {
+      return false
+    }
+  })
+
+  function dismiss() {
+    setDismissed(true)
+    try {
+      localStorage.setItem(dismissKey, "1")
+    } catch {
+      // private mode / storage blocked — dismissing for this session is still fine
+    }
+  }
+
+  if (!reviewable || dismissed) return null
 
   return (
     <>
@@ -47,6 +66,13 @@ export function RideFeedbackBanner({
             <TriangleAlert size={15} strokeWidth={2.2} />
             Report
           </Button>
+          <button
+            onClick={dismiss}
+            aria-label="Dismiss"
+            className="rounded-full p-1.5 text-ink-faint transition-colors hover:bg-paper hover:text-ink"
+          >
+            <X size={16} />
+          </button>
         </div>
       </div>
 

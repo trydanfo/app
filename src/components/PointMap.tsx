@@ -1,5 +1,16 @@
-import { MapContainer, TileLayer, CircleMarker } from "react-leaflet"
+import { useEffect } from "react"
+import { MapContainer, TileLayer, CircleMarker, useMap } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
+
+// react-leaflet only honours `center` on mount, so as the fix updates the map would stay put and the
+// dot would drift to the edge. Recenter follows each new fix to keep the rider's dot centered.
+function Recenter({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap()
+  useEffect(() => {
+    map.setView([lat, lng], map.getZoom(), { animate: true })
+  }, [lat, lng, map])
+  return null
+}
 
 // A single dropped pin. CircleMarker avoids Leaflet's default-icon asset issues under bundlers.
 export function PointMap({ lat, lng, height = "190px" }: { lat: number; lng: number; height?: string }) {
@@ -15,6 +26,7 @@ export function PointMap({ lat, lng, height = "190px" }: { lat: number; lng: num
         attribution="&copy; OpenStreetMap contributors"
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <Recenter lat={lat} lng={lng} />
       <CircleMarker
         center={[lat, lng]}
         radius={8}
